@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition Attendance System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: #3f51b5;
+            color: white;
+            padding: 15px 0;
+            text-align: center;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        
+        .tab-container {
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .tab-nav {
+            display: flex;
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .tab-button {
+            padding: 15px 20px;
+            border: none;
+            background-color: transparent;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-button.active {
+            background-color: white;
+            color: #3f51b5;
+            border-bottom: 2px solid #3f51b5;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        input[type="text"],
+        input[type="password"],
+        input[type="number"],
+        input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        button {
+            background-color: #3f51b5;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        
+        button:hover {
+            background-color: #303f9f;
+        }
+        
+        .video-container {
+            width: 100%;
+            height: 400px;
+            background-color: #000;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 5px;
+        }
+        
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .video-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            background-color: #333;
+            color: white;
+            font-size: 18px;
+        }
+        
+        .status-container {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-text {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .error-text {
+            color: #d32f2f;
+            margin-bottom: 10px;
+        }
+        
+        .success-text {
+            color: #388e3c;
+            margin-bottom: 10px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f5f5f5;
+            font-weight: 500;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .detection-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .face-box {
+            position: absolute;
+            border: 2px solid #ffeb3b;
+            display: none;
+        }
+        
+        .id-box {
+            position: absolute;
+            border: 2px solid #4caf50;
+            display: none;
+        }
+        
+        .detection-label {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 3px 8px;
+            font-size: 12px;
+            border-radius: 3px;
+        }
+        
+        .stage-indicator {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Face Recognition Attendance System</h1>
+        </header>
+        
+        <div class="tab-container">
+            <div class="tab-nav">
+                <button class="tab-button active" data-tab="login">Login</button>
+                <button class="tab-button" data-tab="main" disabled>Main Menu</button>
+                <button class="tab-button" data-tab="training" disabled>Training</button>
+                <button class="tab-button" data-tab="attendance" disabled>Attendance</button>
+                <button class="tab-button" data-tab="reports" disabled>Reports</button>
+            </div>
+            
+            <!-- Login Tab -->
+            <div class="tab-content active" id="login">
+                <h2>System Login</h2>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter password">
+                </div>
+                <button id="login-button">Login</button>
+                <p id="login-info" class="error-text"></p>
+            </div>
+            
+            <!-- Main Menu Tab -->
+            <div class="tab-content" id="main">
+                <h2>Main Menu</h2>
+                <div style="display: flex; gap: 20px; margin-top: 20px;">
+                    <button id="training-link">Training</button>
+                    <button id="attendance-link">Attendance</button>
+                    <button id="reports-link">Reports</button>
+                    <button id="logout-button" style="background-color: #f44336;">Logout</button>
+                </div>
+            </div>
+            
+            <!-- Training Tab -->
+            <div class="tab-content" id="training">
+                <h2>Face Training</h2>
+                <button id="training-back" style="background-color: #757575; margin-bottom: 20px;">Back to Main Menu</button>
+                
+                <div class="video-container">
+                    <div class="video-placeholder">
+                        <p>Camera feed will appear here during training</p>
+                    </div>
+                    <video id="training-video" autoplay muted style="display: none;"></video>
+                    <canvas id="training-canvas" style="display: none;"></canvas>
+                    <div class="detection-overlay" id="training-overlay"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="train-name">Person Name</label>
+                    <input type="text" id="train-name" placeholder="Enter name for training">
+                </div>
+                
+                <div class="form-group">
+                    <label for="train-count">Number of Images</label>
+                    <input type="number" id="train-count" value="100" min="1" max="200">
+                </div>
+                
+                <button id="training-button">Start Training</button>
+                <p id="training-status" class="info-text"></p>
+            </div>
+            
+            <!-- Attendance Tab -->
+            <div class="tab-content" id="attendance">
+                <h2>Record Attendance</h2>
+                <button id="attendance-back" style="background-color: #757575; margin-bottom: 20px;">Back to Main Menu</button>
+                
+                <div class="video-container">
+                    <div class="video-placeholder">
+                        <p>Camera feed will appear here during attendance</p>
+                    </div>
+                    <video id="attendance-video" autoplay muted style="display: none;"></video>
+                    <canvas id="attendance-canvas" style="display: none;"></canvas>
+                    <div class="detection-overlay" id="attendance-overlay"></div>
+                    <div class="stage-indicator" id="stage-indicator">Waiting to start</div>
+                </div>
+                
+                <div class="status-container">
+                    <h3>Current Process</h3>
+                    <p id="current-process">No process started</p>
+                </div>
+                
+                <button id="record-button">Record Attendance</button>
+            </div>
+            
+            <!-- Reports Tab -->
+            <div class="tab-content" id="reports">
+                <h2>Attendance Reports</h2>
+                <button id="reports-back" style="background-color: #757575; margin-bottom: 20px;">Back to Main Menu</button>
+                
+                <div class="form-group">
+                    <label for="report-date">Filter by Date</label>
+                    <input type="date" id="report-date">
+                </div>
+                
+                <div class="table-container">
+                    <table id="reports-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reports-body">
+                            <!-- Reports will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Mock database for demonstration
+        const mockDatabase = {
+            users: [],
+            attendance: [
+                { attendanceid: 1, name: "John Doe", attendancedate: "2025-03-15" },
+                { attendanceid: 2, name: "Jane Smith", attendancedate: "2025-03-15" },
+                { attendanceid: 3, name: "John Doe", attendancedate: "2025-03-16" }
+            ]
+        };
+        
+        // Application state
+        const state = {
+            currentTab: "login",
+            faceDetectionRunning: false,
+            trainingInProgress: false,
+            attendanceInProgress: false,
+            recognizedPerson: null,
+            idCardDetected: false,
+            trainingImageCount: 0,
+            maxTrainingImages: 100,
+            currentStage: 0,
+            trainingInterval: null,
+            activeTimers: []
+        };
+        
+        // DOM elements
+        const tabs = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const loginButton = document.getElementById('login-button');
+        const logoutButton = document.getElementById('logout-button');
+        const trainingLink = document.getElementById('training-link');
+        const attendanceLink = document.getElementById('attendance-link');
+        const reportsLink = document.getElementById('reports-link');
+        const trainingBack = document.getElementById('training-back');
+        const attendanceBack = document.getElementById('attendance-back');
+        const reportsBack = document.getElementById('reports-back');
+        const trainingButton = document.getElementById('training-button');
+        const recordButton = document.getElementById('record-button');
+        const loginInfo = document.getElementById('login-info');
+        const trainingStatus = document.getElementById('training-status');
+        const currentProcess = document.getElementById('current-process');
+        const stageIndicator = document.getElementById('stage-indicator');
+        const reportDate = document.getElementById('report-date');
+        const reportsBody = document.getElementById('reports-body');
+        
+        // Video elements
+        const trainingVideo = document.getElementById('training-video');
+        const trainingCanvas = document.getElementById('training-canvas');
+        const trainingOverlay = document.getElementById('training-overlay');
+        const attendanceVideo = document.getElementById('attendance-video');
+        const attendanceCanvas = document.getElementById('attendance-canvas');
+        const attendanceOverlay = document.getElementById('attendance-overlay');
+        
+        // Helper function for creating timeouts that are tracked
+        function createTrackedTimeout(callback, delay) {
+            const timeoutId = setTimeout(() => {
+                callback();
+                // Remove from active timers when done
+                const index = state.activeTimers.indexOf(timeoutId);
+                if (index > -1) {
+                    state.activeTimers.splice(index, 1);
+                }
+            }, delay);
+            
+            state.activeTimers.push(timeoutId);
+            return timeoutId;
+        }
+        
+        // Set current date
+        const today = new Date();
+        const formattedDate = today.toISOString().split('T')[0];
+        reportDate.value = formattedDate;
+        
+        // Tab navigation
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                if (tab.disabled) return;
+                
+                const tabId = tab.getAttribute('data-tab');
+                switchTab(tabId);
+            });
+        });
+        
+        function switchTab(tabId) {
+            if (tabId === state.currentTab) return;
+            
+            // Stop any active camera feeds and clear timers
+            stopCamera();
+            
+            // Update tab buttons
+            tabs.forEach(tab => {
+                if (tab.getAttribute('data-tab') === tabId) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            // Update tab content
+            tabContents.forEach(content => {
+                if (content.id === tabId) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+            
+            state.currentTab = tabId;
+            
+            // Special handling for reports tab
+            if (tabId === 'reports') {
+                loadReports();
+            }
+        }
+        
+        // Login functionality
+        loginButton.addEventListener('click', () => {
+            const password = document.getElementById('password').value;
+            if (password === '123') {
+                // Enable main menu tabs
+                tabs.forEach(tab => {
+                    if (tab.getAttribute('data-tab') !== 'login') {
+                        tab.disabled = false;
+                    }
+                });// Switch to main tab
+                switchTab('main');
+                loginInfo.textContent = "";
+            } else {
+                loginInfo.textContent = "Invalid Password...";
+                document.getElementById('password').value = "";
+            }
+        });
+        
+        // Logout functionality
+        logoutButton.addEventListener('click', () => {
+            // Disable all tabs except login
+            tabs.forEach(tab => {
+                if (tab.getAttribute('data-tab') !== 'login') {
+                    tab.disabled = true;
+                }
+            });
+            
+            // Clear password field
+            document.getElementById('password').value = "";
+            switchTab('login');
+        });
+        
+        // Navigation links
+        trainingLink.addEventListener('click', () => switchTab('training'));
+        attendanceLink.addEventListener('click', () => switchTab('attendance'));
+        reportsLink.addEventListener('click', () => switchTab('reports'));
+        trainingBack.addEventListener('click', () => switchTab('main'));
+        attendanceBack.addEventListener('click', () => switchTab('main'));
+        reportsBack.addEventListener('click', () => switchTab('main'));
+        
+        // Training functionality
+        trainingButton.addEventListener('click', () => {
+            const name = document.getElementById('train-name').value;
+            const count = document.getElementById('train-count').value;
+            
+            if (!name) {
+                trainingStatus.textContent = "Please enter a name for training";
+                trainingStatus.className = "error-text";
+                return;
+            }
+            
+            if (!count || isNaN(parseInt(count)) || parseInt(count) <= 0) {
+                trainingStatus.textContent = "Please enter a valid number of images";
+                trainingStatus.className = "error-text";
+                return;
+            }
+            
+            state.maxTrainingImages = parseInt(count);
+            trainingStatus.textContent = `Starting training for ${name}...`;
+            trainingStatus.className = "info-text";
+            
+            // Start camera for training
+            startTrainingCamera();
+        });
+        
+        // Attendance recording functionality
+        recordButton.addEventListener('click', () => {
+            if (state.attendanceInProgress) {
+                stopAttendanceProcess();
+            } else {
+                startAttendanceProcess();
+            }
+        });
+        
+        // Report date filtering
+        reportDate.addEventListener('change', () => {
+            loadReports(reportDate.value);
+        });
+        
+        // Camera handling functions
+        function startTrainingCamera() {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(stream => {
+                        trainingVideo.srcObject = stream;
+                        trainingVideo.style.display = 'block';
+                        document.querySelector('#training .video-placeholder').style.display = 'none';
+                        
+                        // Clear previous overlay content
+                        trainingOverlay.innerHTML = '';
+                        
+                        // Start face detection for training
+                        startTrainingProcess();
+                    })
+                    .catch(error => {
+                        trainingStatus.textContent = `Camera error: ${error.message}`;
+                        trainingStatus.className = "error-text";
+                    });
+            } else {
+                trainingStatus.textContent = "Camera access not supported by your browser";
+                trainingStatus.className = "error-text";
+            }
+        }
+        
+        function startAttendanceCamera() {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(stream => {
+                        attendanceVideo.srcObject = stream;
+                        attendanceVideo.style.display = 'block';
+                        document.querySelector('#attendance .video-placeholder').style.display = 'none';
+                        
+                        // Clear previous overlay content
+                        attendanceOverlay.innerHTML = '';
+                        
+                        // Start face detection for attendance
+                        startFaceDetection();
+                    })
+                    .catch(error => {
+                        currentProcess.textContent = `Camera error: ${error.message}`;
+                    });
+            } else {
+                currentProcess.textContent = "Camera access not supported by your browser";
+            }
+        }
+        
+        function stopCamera() {
+            // Stop training video
+            if (trainingVideo.srcObject) {
+                trainingVideo.srcObject.getTracks().forEach(track => track.stop());
+                trainingVideo.style.display = 'none';
+                document.querySelector('#training .video-placeholder').style.display = 'flex';
+            }
+            
+            // Stop attendance video
+            if (attendanceVideo.srcObject) {
+                attendanceVideo.srcObject.getTracks().forEach(track => track.stop());
+                attendanceVideo.style.display = 'none';
+                document.querySelector('#attendance .video-placeholder').style.display = 'flex';
+            }
+            
+            // Clear overlays
+            trainingOverlay.innerHTML = '';
+            attendanceOverlay.innerHTML = '';
+            
+            // Clear status messages
+            trainingStatus.textContent = '';
+            currentProcess.textContent = 'No process started';
+            stageIndicator.textContent = 'Waiting to start';
+            
+            // Reset state
+            state.faceDetectionRunning = false;
+            state.trainingInProgress = false;
+            state.attendanceInProgress = false;
+            state.recognizedPerson = null;
+            state.idCardDetected = false;
+            state.currentStage = 0;
+            
+            // Clear intervals and timers
+            if (state.trainingInterval) {
+                clearInterval(state.trainingInterval);
+                state.trainingInterval = null;
+            }
+            
+            state.activeTimers.forEach(timerId => {
+                clearTimeout(timerId);
+            });
+            
+            state.activeTimers = [];
+            
+            // Reset buttons
+            trainingButton.textContent = "Start Training";
+            recordButton.textContent = "Record Attendance";
+        }
+        
+        // Face detection functions (simplified mock implementations)
+        function startTrainingProcess() {
+            if (state.trainingInProgress) {
+                return;
+            }
+            
+            state.trainingInProgress = true;
+            state.trainingImageCount = 0;
+            trainingButton.textContent = "Stop Training";
+            
+            // Simulate training progress
+            state.trainingInterval = setInterval(() => {
+                state.trainingImageCount++;
+                const progress = Math.min(100, (state.trainingImageCount / state.maxTrainingImages) * 100);
+                trainingStatus.textContent = `Training in progress: ${state.trainingImageCount}/${state.maxTrainingImages} images captured (${progress.toFixed(1)}%)`;
+                
+                // Create a "detected face" box
+                const faceBox = document.createElement('div');
+                faceBox.className = 'face-box';
+                faceBox.style.display = 'block';
+                faceBox.style.top = `${Math.random() * 60 + 20}%`;
+                faceBox.style.left = `${Math.random() * 60 + 20}%`;
+                faceBox.style.width = '100px';
+                faceBox.style.height = '100px';
+                
+                // Remove old face boxes and add new one
+                const oldFaces = trainingOverlay.querySelectorAll('.face-box');
+                if (oldFaces.length > 0) {
+                    oldFaces.forEach(face => face.remove());
+                }
+                
+                trainingOverlay.appendChild(faceBox);
+                
+                // If we've reached the max images, stop training
+                if (state.trainingImageCount >= state.maxTrainingImages) {
+                    completeTraining();
+                }
+            }, 100);
+        }
+        
+        function completeTraining() {
+            clearInterval(state.trainingInterval);
+            state.trainingInterval = null;
+            state.trainingInProgress = false;
+            trainingButton.textContent = "Start Training";
+            
+            const name = document.getElementById('train-name').value;
+            trainingStatus.textContent = `Training completed for ${name} with ${state.trainingImageCount} images`;
+            trainingStatus.className = "success-text";
+            
+            // Clear the training field
+            document.getElementById('train-name').value = "";
+            document.getElementById('train-count').value = "100";
+            
+            // Stop the camera after a delay
+            createTrackedTimeout(() => {
+                stopCamera();
+            }, 2000);
+        }
+        
+        function startFaceDetection() {
+            state.faceDetectionRunning = true;
+            state.currentStage = 1;
+            stageIndicator.textContent = "Stage 1: Face Recognition";
+            
+            // Simulate face detection process
+            createTrackedTimeout(() => {
+                // Simulate detected face
+                const faceBox = document.createElement('div');
+                faceBox.className = 'face-box';
+                faceBox.style.display = 'block';
+                faceBox.style.top = '30%';
+                faceBox.style.left = '40%';
+                faceBox.style.width = '120px';
+                faceBox.style.height = '120px';
+                
+                const faceLabel = document.createElement('div');
+                faceLabel.className = 'detection-label';
+                faceLabel.style.top = 'calc(30% - 20px)';
+                faceLabel.style.left = '40%';
+                faceLabel.textContent = 'Scanning...';
+                
+                attendanceOverlay.appendChild(faceBox);
+                attendanceOverlay.appendChild(faceLabel);
+                
+                currentProcess.textContent = "Detecting face...";
+                
+                // After a delay, recognize the face
+                createTrackedTimeout(() => {
+                    recognizeFace();
+                }, 2000);
+            }, 1000);
+        }
+        
+        function recognizeFace() {
+            // Simulate face recognition
+            const possibleNames = ["John Doe", "Jane Smith", "Mike Johnson", "Sarah Williams"];
+            state.recognizedPerson = possibleNames[Math.floor(Math.random() * possibleNames.length)];
+            
+            const faceLabels = attendanceOverlay.querySelectorAll('.detection-label');
+            if (faceLabels.length > 0) {
+                faceLabels[0].textContent = state.recognizedPerson;
+                faceLabels[0].style.backgroundColor = 'rgba(0, 128, 0, 0.7)';
+            }
+            
+            currentProcess.textContent = `Face recognized: ${state.recognizedPerson}`;
+            
+            // Move to stage 2: ID card detection
+            state.currentStage = 2;
+            stageIndicator.textContent = "Stage 2: ID Card Detection";
+            
+            createTrackedTimeout(() => {
+                detectIdCard();
+            }, 2000);
+        }
+        
+        function detectIdCard() {
+            // Simulate ID card detection
+            state.idCardDetected = Math.random() > 0.3; // 70% chance of having ID card
+            
+            const idBox = document.createElement('div');
+            idBox.className = 'id-box';
+            idBox.style.display = 'block';
+            idBox.style.top = '60%';
+            idBox.style.left = '25%';
+            idBox.style.width = '200px';
+            idBox.style.height = '60px';
+            
+            const idLabel = document.createElement('div');
+            idLabel.className = 'detection-label';
+            idLabel.style.top = 'calc(60% - 20px)';
+            idLabel.style.left = '25%';
+            
+            if (state.idCardDetected) {
+                idLabel.textContent = 'ID Card Detected';
+                idLabel.style.backgroundColor = 'rgba(0, 128, 0, 0.7)';
+                currentProcess.textContent = `ID card detected for ${state.recognizedPerson}`;
+            } else {
+                idLabel.textContent = 'No ID Card';
+                idLabel.style.backgroundColor = 'rgba(255, 0, 0, 0.7)';
+                currentProcess.textContent = `No ID card detected for ${state.recognizedPerson}`;
+            }
+            
+            attendanceOverlay.appendChild(idBox);
+            attendanceOverlay.appendChild(idLabel);
+            
+            // Move to stage 3: Processing attendance
+            state.currentStage = 3;
+            stageIndicator.textContent = "Stage 3: Processing Attendance";
+            
+            createTrackedTimeout(() => {
+                processAttendance();
+            }, 2000);
+        }
+        
+        function processAttendance() {
+            // Final stage: Record attendance if both face and ID card were detected
+            if (state.recognizedPerson && state.idCardDetected) {
+                // Add to mock database
+                mockDatabase.attendance.push({
+                    attendanceid: mockDatabase.attendance.length + 1,
+                    name: state.recognizedPerson,
+                    attendancedate: formattedDate
+                });
+                
+                stageIndicator.textContent = "Attendance Recorded";
+                currentProcess.textContent = `Success! Attendance recorded for ${state.recognizedPerson}`;
+                currentProcess.className = "success-text";
+            } else if (state.recognizedPerson && !state.idCardDetected) {
+                stageIndicator.textContent = "Attendance Failed";
+                currentProcess.textContent = `Failed: ${state.recognizedPerson} has no ID card`;
+                currentProcess.className = "error-text";
+            } else {
+                stageIndicator.textContent = "Attendance Failed";
+                currentProcess.textContent = "Failed: Could not recognize face";
+                currentProcess.className = "error-text";
+            }
+            
+            // Complete the process
+            state.attendanceInProgress = false;
+            recordButton.textContent = "Record Attendance";
+            
+            // Stop camera after a delay
+            createTrackedTimeout(() => {
+                stopCamera();
+            }, 5000);
+        }
+        
+        function startAttendanceProcess() {
+            if (state.attendanceInProgress) {
+                return;
+            }
+            
+            state.attendanceInProgress = true;
+            recordButton.textContent = "Stop Recording";
+            currentProcess.textContent = "Starting attendance recording...";
+            currentProcess.className = "info-text";
+            
+            // Start the camera
+            startAttendanceCamera();
+        }
+        
+        function stopAttendanceProcess() {
+            state.attendanceInProgress = false;
+            recordButton.textContent = "Record Attendance";
+            currentProcess.textContent = "Attendance recording stopped";
+            
+            // Stop the camera
+            stopCamera();
+        }
+        
+        function loadReports(dateFilter = null) {
+            const tbody = reportsBody;
+            tbody.innerHTML = '';
+            
+            let filteredReports;
+            if (dateFilter) {
+                filteredReports = mockDatabase.attendance.filter(record => record.attendancedate === dateFilter);
+            } else {
+                filteredReports = mockDatabase.attendance;
+            }
+            
+            filteredReports.forEach(record => {
+                const row = document.createElement('tr');
+                
+                const idCell = document.createElement('td');
+                idCell.textContent = record.attendanceid;
+                row.appendChild(idCell);
+                
+                const nameCell = document.createElement('td');
+                nameCell.textContent = record.name;
+                row.appendChild(nameCell);
+                
+                const dateCell = document.createElement('td');
+                dateCell.textContent = record.attendancedate;
+                row.appendChild(dateCell);
+                
+                tbody.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>
